@@ -1,8 +1,14 @@
-﻿<Application x:Class="CashMoney.App"
+﻿<Application x:Class="CashMoney.UI.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             StartupUri="MainWindow.xaml">
+             xmlns:MainWindow="clr-namespace:CashMoney.UI.MainWindow">
     <Application.Resources>
-         
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary>
+                    <MainWindow:CashMoneyBootstrapper x:Key="bootstrapper" />
+                </ResourceDictionary>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
     </Application.Resources>
 </Application>
