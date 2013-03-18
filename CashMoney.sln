@@ -3,6 +3,8 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CashMoney.UI", "CashMoney\CashMoney.UI.csproj", "{B06E0D92-B755-41C1-B5BC-F106A399114D}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "CashMoney.Domain", "CashMoney.Domain\CashMoney.Domain.fsproj", "{533746B0-5AC7-4645-AA74-8F1ABC5DDEDB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -13,6 +15,10 @@ Global
 		{B06E0D92-B755-41C1-B5BC-F106A399114D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B06E0D92-B755-41C1-B5BC-F106A399114D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B06E0D92-B755-41C1-B5BC-F106A399114D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{533746B0-5AC7-4645-AA74-8F1ABC5DDEDB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{533746B0-5AC7-4645-AA74-8F1ABC5DDEDB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{533746B0-5AC7-4645-AA74-8F1ABC5DDEDB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{533746B0-5AC7-4645-AA74-8F1ABC5DDEDB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
