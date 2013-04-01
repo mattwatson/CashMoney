@@ -1,0 +1,52 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<accounts>
+  <account id="1" name="Cash" type="1" isEnabled="false">
+    <tags>
+      <tag>9</tag>
+    </tags>
+  </account>
+  <account id="3" name="Eating Out" type="4" isEnabled="true">
+    <tags>
+      <tag>1</tag>
+      <tag>4</tag>
+    </tags>
+  </account>
+  <account id="15" name="Current Account" type="1" isEnabled="true">
+    <tags>
+      <tag>13</tag>
+    </tags>
+  </account>
+  <account id="19" name="Electricity Bill" type="4" isEnabled="true">
+    <tags>
+      <tag>11</tag>
+    </tags>
+  </account>
+  <account id="23" name="Credit Card" type="2" isEnabled="true">
+    <tags>
+      <tag>10</tag>
+    </tags>
+  </account>
+  <account id="28" name="Phone Bill" type="4" isEnabled="true">
+    <tags>
+      <tag>11</tag>
+    </tags>
+  </account>
+  <account id="44" name="Drinks" type="4" isEnabled="true">
+    <tags>
+      <tag>1</tag>
+    </tags>
+  </account>
+  <account id="52" name="Groceries" type="4" isEnabled="true">
+    <tags>
+      <tag>4</tag>
+    </tags>
+  </account>
+  <account id="89" name="Rent" type="4" isEnabled="true">
+    <tags>
+      <tag>11</tag>
+    </tags>
+  </account>
+  <account id="109" name="Pay" type="3" isEnabled="true">
+    <tags />
+  </account>
+</accounts>
