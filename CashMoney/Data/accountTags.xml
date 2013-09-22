@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<accountTags>
+  <tag id="1">Entertainment</tag>
+  <tag id="2">Transport</tag>
+  <tag id="3">Items</tag>
+  <tag id="4">Food</tag>
+  <tag id="5">Other</tag>
+  <tag id="6">Tax</tag>
+  <tag id="7">Person</tag>
+  <tag id="8">Services</tag>
+  <tag id="9">Cash</tag>
+  <tag id="10">Loan</tag>
+  <tag id="11">Bills</tag>
+  <tag id="12">Pay</tag>
+  <tag id="13">Bank</tag>
+</accountTags>

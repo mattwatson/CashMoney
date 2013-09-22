@@ -1,19 +1,11 @@
-﻿#load "Domain.fs"
+﻿#r "System.Xml.Linq" //Don't understand why I need this - not even sure if I do.
+
+#load "Domain.fs"
+
 open System
 open CashMoney.Domain
 open System.Linq
-#r "System.Xml.Linq" //Don't understand why I need this - not even sure if I do.
 open System.Xml.Linq
-
-//Domain
-type AccountType = Asset | Liability | Income | Expense | Payable | Receivable | Equity
-
-type Account =
-    { Id      : int;
-      Name    : string;
-      Enabled : bool;
-      Type    : AccountType;
-      Tags    : int list }
 
 //XML parsing functions
 let attribute (node:XElement, name) = 
@@ -30,40 +22,53 @@ let boolAttribute (node:XElement, name) =
     let (ok, result) = Boolean.TryParse (attr)
     if (ok) then result else failwith("Unabled to parse boolean out of '" + attr + "' for attribute called '" + name + "'")
 
-let parseAccountType(node) =
-    match intAttribute(node, "type") with
-    | 1 -> Asset
-    | 2 -> Liability
-    | 3 -> Income
-    | 4 -> Expense
-    | 5 -> Payable
-    | 6 -> Receivable
-    | 7 -> Equity
-    | x -> failwith ("Unknown Account Type specified '" + string x + "'")
+let parseAccountTag (account :XElement):AccountTag = 
+    let id = intAttribute (account, "id")
+    let name = account.Value
+    { Id = id; Name = name}
 
-let parseAccountTags(node:XElement) =
-    let elements = node.Element(XName.Get("tags"))
-    node.Element(XName.Get("tags")).Elements()
-    |> List.ofSeq 
-    |> List.map (fun tag -> 
-        let (ok, result) = Int32.TryParse(tag.Value)
-        if ok then result else failwith ("Unabled to parse int from '" + tag.Value + "' for tag'"))
+let accountTags =
+    XDocument.Load(@"C:\Users\Matt\Documents\GitHub\CashMoney\CashMoney\Data\accountTags.xml").Root.Elements()
+    |> Seq.map parseAccountTag
+    |> Seq.map (fun x -> x.Id,x)
+    |> Map.ofSeq
 
 let parseAccount (account :XElement) =
+
+    let parseAccountType(node) =
+        match intAttribute(node, "type") with
+        | 1 -> Asset;
+        | 2 -> Liability;
+        | 3 -> Income;
+        | 4 -> Expense;
+        | 5 -> Payable;
+        | 6 -> Receivable;
+        | 7 -> Equity;
+        | x -> failwith ("Unknown Account Type specified '" + string x + "'")
+
+    let parseAccountTags(node:XElement) =
+        let parseTagId tag = 
+            let (ok, result) = Int32.TryParse(tag)
+            if ok then result else failwith ("Unabled to parse int from '" + tag + "' for tag'")
+        
+        node.Element(XName.Get("tags")).Elements()
+        |> Seq.map (fun tag -> parseTagId tag.Value)
+        |> Seq.map (fun tagId -> accountTags.Item(tagId))
+   
     let id = intAttribute (account, "id")
     let name = attribute (account, "name")
     let accountType = parseAccountType account
     let isEnabled = boolAttribute (account, "isEnabled")
     let tags = parseAccountTags account
-    { Id = id; Name = name; Enabled = isEnabled; Type = accountType; Tags = tags}
+    { Id = id; Name = name; Enabled = isEnabled; Type = accountType; Tags = Seq.toList tags}
 
+let accounts = 
+    XDocument.Load(@"C:\Users\Matt\Documents\GitHub\CashMoney\CashMoney\Data\accounts.xml").Root.Elements() 
+    |> Seq.map parseAccount
 
-let accounts = XDocument.Load(@"C:\Users\Matt\Documents\GitHub\CashMoney\CashMoney\Data\accounts.xml").Root.Elements() 
-               |> List.ofSeq 
-               |> List.map parseAccount
+accounts |> Seq.sortBy (fun x -> x.Name) |> Seq.iter (fun a -> printfn "%s (%A) Tags: %A" a.Name a.Type a.Tags)
 
-
-accounts |> List.sortBy (fun x -> x.Name) |> List.iter (fun a -> printfn "%s (%A) Tags: %A" a.Name a.Type a.Tags)
+//TODO make parsing for journals and transactions
 
 //type Direction = In | Out
 //
