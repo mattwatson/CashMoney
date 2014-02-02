@@ -68,28 +68,38 @@ let accounts =
 
 accounts |> Seq.sortBy (fun x -> x.Name) |> Seq.iter (fun a -> printfn "%s (%A) Tags: %A" a.Name a.Type a.Tags)
 
+let parseJournal (account :XElement) = 
+    "row"
+
+let journals = 
+    XDocument.Load(@"C:\Users\Matt\Documents\GitHub\CashMoney\CashMoney\Data\journals.xml").Root.Elements()
+    |> Seq.map parseJournal
+
+
 //TODO make parsing for journals and transactions
+//TODO make parsing for templates (probably reusing the journal parsing
+//TODO make foreign keys just references not copies of the actual value? no need to embed it when you can have a map.
+type Direction = In | Out
 
-//type Direction = In | Out
-//
-//type Money = 
-//    | Amount of decimal
-//    | Fraction of (decimal * int)
+type Money = 
+    | Amount of decimal
+    | Fraction of (decimal * int)
 
-//type Transaction = 
-//    { Direction : Direction;
-//      Account   : int;
-//      Amount    : Money;
-//      Note      : string;
-//      Verified  : bool }
-//
-//type Journal = 
-//    { Date          : DateTime;
-//      Description   : string;
-//      Transactions  : Transaction list}
+type Transaction = 
+    { Direction : Direction;
+      Account   : int;
+      Amount    : Money;
+      Note      : string;
+      Verified  : bool }
 
-//Maybe when saving down the Journals to files they are saved to the Account of their first transaction.
-//Issues: when an account is renamed what happens to it's file? What if the Journal has no transactions?
+type Journal = 
+    { Date          : DateTime;
+      Description   : string;
+      Transactions  : Transaction list}
+
+
+//Just dump out journals in date order
+//  Could have one file per year, or one per month.
 
 //Or could just save journals by the year, or by a number per file.
 
@@ -97,11 +107,11 @@ accounts |> Seq.sortBy (fun x -> x.Name) |> Seq.iter (fun a -> printfn "%s (%A) 
 //    match a with 
 //    | Amount a -> a
 //    | Fraction (a,f) ->  (a / decimal f)
-//
+
 
 //let tran1 = { Direction = In ; Account = bank.Id ; Amount = Amount 5.35M ; Note = "" ; Verified = false }
 //let tran2 = { Direction = Out; Account = cash.Id ; Amount = Fraction (5.34M, 3) ; Note = "" ; Verified = false }
-//
+
 //let journal1 = {
 //    Date = DateTime.Today ;
 //    Description = "Bought some food with Cash" 

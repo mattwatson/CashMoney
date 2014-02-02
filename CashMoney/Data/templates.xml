@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<templates>
+  <template>
+    <journal id="0" date="2012-03-14T00:00:00" description="pay" isVerified="false">
+      <transactions>
+        <transaction direction="1" account="15" amount="241.00" note="" isVerified="false" />
+        <transaction direction="2" account="109" amount="937.43" note="" isVerified="false" />
+      </transactions>
+    </journal>
+    <journal id="0" date="2012-03-15T00:00:00" description="Rent" isVerified="false">
+      <transactions>
+        <transaction direction="2" account="15" amount="433.33" note="" isVerified="true" />
+        <transaction direction="1" account="89" amount="433.33" note="" isVerified="false" />
+      </transactions>
+    </journal>
+    <journal id="0" date="2012-03-09T00:00:00" description="Electricity bill" isVerified="false">
+      <transactions>
+        <transaction direction="2" account="1" amount="15" note="" isVerified="false" />
+        <transaction direction="1" account="19" amount="15" note="" isVerified="false" />
+      </transactions>
+    </journal>
+  </template>
+</templates>
