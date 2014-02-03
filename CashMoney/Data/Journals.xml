@@ -4,7 +4,7 @@
     <transactions>
       <transaction direction="1" account="1" amount="17.00" note="" isVerified="true" />
       <transaction direction="1" account="3" amount="17.20" note="" isVerified="true" />
-      <transaction direction="2" account="18" amount="34.20" note="" isVerified="true" />
+      <transaction direction="2" account="15" amount="34.20" note="" isVerified="true" />
     </transactions>
   </journal>
   <journal id="5" date="2011-10-09T00:00:00" description="Electricity bill" isVerified="false">
