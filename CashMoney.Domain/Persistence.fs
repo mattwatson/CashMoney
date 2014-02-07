@@ -6,6 +6,8 @@ open System.Xml.Linq
 
 open CashMoney.Domain
 
+//When saving journals in the future, just dump them out in date order, and perhaps have one file per year, or one per month.
+
 //XML parsing functions
 let attribute (node:XElement, name) = 
     let attr = node.Attribute(XName.Get(name))
@@ -99,3 +101,16 @@ let parseJournal (journal:XElement) =
     let transactions = parseTransactions journal
     { Id = id; Date = date; Description = description; Verified = verified; Transactions = Seq.toList transactions}
 
+let LoadAccountTags (path:string) =
+    XDocument.Load(path).Root.Elements()
+    |> Seq.map parseAccountTag
+    |> Seq.map (fun x -> x.Id,x)
+    |> Map.ofSeq
+
+let LoadAccounts (path:string) = 
+    XDocument.Load(path).Root.Elements() 
+    |> Seq.map parseAccount
+    |> Seq.map (fun x -> x.Id, x)
+    |> Map.ofSeq
+
+let LoadJournals (path:string) = XDocument.Load(path).Root.Elements() |> Seq.map parseJournal
