@@ -2,6 +2,7 @@
 
 #load "Domain.fs"
 #load "Persistence.fs"
+#load "Kitty.fs"
 
 open System
 open System.IO
@@ -10,65 +11,19 @@ open System.Xml.Linq
 
 open CashMoney.Domain
 open Persistence
+open Kitty
 
-//let datapath = @"C:\Users\Matt\Documents\dev\CashMoney\CashMoney\Data\"
 let datapath = @"C:\Users\Matt\Dropbox\Akcounts\Data\"
 
-let accountTags = LoadAccountTags <| datapath + @"\accountTags.xml"
-let accounts = LoadAccounts <| datapath + @"\accounts.xml"
-let journals = LoadJournals <| datapath + @"\journals.xml"
-//let templates = LoadTemplates <| datapath + @"\templates.xml"
+let accountTags = LoadAccountTags datapath
+let accounts = LoadAccounts datapath 
+let journals = LoadJournals datapath
 
-let getAccountId name = (accounts |> Seq.find (fun a -> a.Value.Name.StartsWith(name))).Value.Id
-let isKittyAccount ac = ac.Name.Contains("Kitty")
+kittyJournals accounts journals
+//|> Seq.map (fun (ac,kjs) -> ac,kjs |> Seq.sortBy (fun kj -> kj.Date) |> Seq.map (fun kj -> sprintf "%s,%s,%M,%M,%M,%M,%M,%M,%M,%M,%M,%M,%M" (kj.Date.ToShortDateString()) (kj.Item.Replace(',','.')) kj.Total.Spent kj.Matt.Spent kj.Russ.Spent kj.Jia.Spent kj.Rima.Spent kj.Argiro.Spent kj.Matt.Paid kj.Russ.Paid kj.Jia.Paid kj.Rima.Paid kj.Argiro.Paid) |> Seq.toList)
+//|> Seq.iter (fun (ac,contents) -> File.WriteAllLines(datapath + @"kitty\" + ac.Name + ".csv", List.toArray ("Date,Item,Total,Matt,Russ,Jia,Rima,Argiro,Matt,Russ,Jia,Rima,Argiro" :: contents)))
 
-let russAccount = getAccountId "Russell"
-let rimaAccount = getAccountId "Rima"
-let jiaAccount = getAccountId "Jia"
-let argiroAccount = getAccountId "Argiro"
 
-let kittyAccounts = accounts |> Seq.map (fun ac -> ac.Value) |> Seq.where isKittyAccount |> Seq.map (fun ac -> ac.Id) |> Seq.toList
-let mattAccounts = 
-    let nonMattAccounts = russAccount :: rimaAccount :: jiaAccount :: argiroAccount :: kittyAccounts
-    accounts |> Seq.map (fun x-> x.Key) |> Seq.where (fun a -> nonMattAccounts.Contains(a) = false) |> Seq.toList
-
-let convertMoney a = match a with | Amount a -> a | Fraction (a,f) ->  (a / decimal f)
-
-type SpentPaid = { Spent:decimal; Paid:decimal; }
-type KittyRow = { Date:DateTime; Item:string; Total:SpentPaid; Matt:SpentPaid; Russ:SpentPaid; Jia:SpentPaid; Rima:SpentPaid; Argiro:SpentPaid; }
-
-let kittyRow journal = 
-    let sumTrans filter ts = ts |> Seq.filter filter |> Seq.sumBy (fun t -> if t.Direction = In then convertMoney t.Amount else -convertMoney t.Amount)
-    let CreateSpentPaidFromId id ts = 
-        { Spent = sumTrans (fun x -> x.Account.Value = id && x.Direction = In) ts; 
-          Paid = 0M - sumTrans (fun x -> x.Account.Value = id && x.Direction = Out) ts }
-    let CreateSpentPaidFromIds (ids:int list) ts = 
-        { Spent = sumTrans (fun x -> ids.Contains(x.Account.Value) && x.Direction = In) ts; 
-          Paid = 0M - sumTrans (fun x -> ids.Contains(x.Account.Value) && x.Direction = Out) ts }
-        
-    journal.Transactions
-    |> fun ts -> 
-        { Date = journal.Date
-          Item = journal.Description
-          Total = CreateSpentPaidFromIds kittyAccounts ts
-          Matt = CreateSpentPaidFromIds mattAccounts ts
-          Russ = CreateSpentPaidFromId russAccount ts
-          Jia = CreateSpentPaidFromId jiaAccount ts
-          Rima = CreateSpentPaidFromId rimaAccount ts
-          Argiro = CreateSpentPaidFromId argiroAccount ts
-        }
-
-let kittyJournals = 
-    let hasKittyTransactions ac j = j.Transactions.Any (fun t -> t.Account.IsSome && t.Account.Value = ac)
-    kittyAccounts 
-    |> Seq.map (fun id -> accounts.Item(id), journals |> Seq.where (hasKittyTransactions id)) 
-    |> Seq.map (fun (ac,js) -> ac, js |> Seq.map kittyRow)
-
-kittyJournals 
-|> Seq.map (fun (ac,kjs) -> ac, kjs |> Seq.sortBy (fun kj -> kj.Date) |> Seq.map (fun kj -> sprintf "%s,%s,%M,%M,%M,%M,%M,%M,%M,%M,%M,%M,%M" (kj.Date.ToShortDateString()) (kj.Item.Replace(',','.')) kj.Total.Spent kj.Matt.Spent kj.Russ.Spent kj.Jia.Spent kj.Rima.Spent kj.Argiro.Spent kj.Matt.Paid kj.Russ.Paid kj.Jia.Paid kj.Rima.Paid kj.Argiro.Paid) |> Seq.toList)
-|> Seq.iter (fun (ac,contents) -> File.WriteAllLines(datapath + @"kitty\" + ac.Name + ".csv", List.toArray ("Date,Item,Total,Matt,Russ,Jia,Rima,Argiro,Matt,Russ,Jia,Rima,Argiro" :: contents)))
-
-//
 //let kittySheets = 
 //    let hasKittyTransactions j = j.Transactions.Any (fun t -> t.Account.IsSome && kittyAccounts.Contains(t.Account.Value))
 //    journals
@@ -132,3 +87,5 @@ kittyJournals
 //|> Seq.sortBy (fun (ac,am) -> ac.Name)
 //|> Seq.iter (fun (ac, am) -> printfn "%s,%A,%b,%M" ac.Name ac.Type ac.Enabled am)
 //
+
+

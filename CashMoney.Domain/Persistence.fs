@@ -102,15 +102,17 @@ let parseJournal (journal:XElement) =
     { Id = id; Date = date; Description = description; Verified = verified; Transactions = Seq.toList transactions}
 
 let LoadAccountTags (path:string) =
-    XDocument.Load(path).Root.Elements()
+    XDocument.Load(path + @"\accountTags.xml").Root.Elements()
     |> Seq.map parseAccountTag
     |> Seq.map (fun x -> x.Id,x)
     |> Map.ofSeq
 
 let LoadAccounts (path:string) = 
-    XDocument.Load(path).Root.Elements() 
+    XDocument.Load(path + @"\accounts.xml").Root.Elements() 
     |> Seq.map parseAccount
     |> Seq.map (fun x -> x.Id, x)
     |> Map.ofSeq
 
-let LoadJournals (path:string) = XDocument.Load(path).Root.Elements() |> Seq.map parseJournal
+let LoadJournals (path:string) = 
+    XDocument.Load(path + @"\journals.xml" ).Root.Elements() 
+    |> Seq.map parseJournal
