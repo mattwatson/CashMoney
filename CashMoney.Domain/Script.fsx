@@ -19,7 +19,62 @@ let accountTags = LoadAccountTags datapath
 let accounts = LoadAccounts datapath 
 let journals = LoadJournals datapath
 
-kittyJournals accounts journals
+//Start new stuff
+
+let addSp sp1 sp2 = 
+    if (sp1.AcName = sp2.AcName)
+    then { AcName = (sp1.AcName); Spent = (sp1.Spent + sp2.Spent); Paid = (sp1.Paid + sp2.Paid) }
+    else failwith ("Cannot merge spentPaid for " + sp1.AcName + " with " + sp2.AcName)
+
+let mergeSpendPaid acc newSP = 
+    let existingSP = acc |> List.tryFind (fun x -> x.AcName = newSP.AcName)
+    match existingSP with 
+    | None -> newSP :: acc
+    | Some accSp -> acc |> List.map (fun sp -> if sp = accSp then addSp sp newSP else sp)
+
+let mergeKittyRow acc kr = 
+    { 
+        Date = if acc.Date < kr.Date then acc.Date else kr.Date
+        Item = "Total"
+        SpentPaids = List.fold mergeSpendPaid acc.SpentPaids kr.SpentPaids
+    }
+
+
+//    let mergeSpendPaidList spl1 spl2 =
+   
+    //let x rows = rows.Total :: rows.Matt :: rows.Others
+
+let totalKitty (kjs:KittyRow list) = 
+    match kjs with
+    | [] -> failwith "Cannot work out the total if there are no rows"
+    | kj :: kjs -> kjs |> List.fold mergeKittyRow kj 
+    
+
+
+
+let fixedHeader = ["Date"; "Item"; "Total";]
+let accountGroups (kj:KittyRow) = kj.SpentPaids |> List.map (fun sp -> sp.AcName)
+let createHeader kj = String.Join (",", fixedHeader @ accountGroups kj @ accountGroups kj)
+
+let kittyJournals = 
+    let kjs = kittyJournals accounts journals
+    
+    let rows = kjs |> Seq.map (fun (ac,kjs) -> ac, totalKitty (Seq.toList kjs))
+
+    let rowStrings = 
+        rows
+        |> Seq.map (fun (ac,kjs) -> (List.fold (fun acc x -> sprintf "%s,%M" acc x.Spent) (sprintf "%s,%s" ac.Name "Total") kjs.SpentPaids) + (List.fold (fun acc x -> sprintf "%s,%M" acc x.Paid) (sprintf "%s,%s" ac.Name "Total") kjs.SpentPaids))
+        |> Seq.toList
+
+    let firstKJ = rows |> Seq.nth 0 |> snd
+    let header = createHeader firstKJ
+
+    header :: rowStrings
+
+//|> Seq.map (fun (ac,kjs) -> ac, createHeader kjs.First())
+
+
+
 //|> Seq.map (fun (ac,kjs) -> ac,kjs |> Seq.sortBy (fun kj -> kj.Date) |> Seq.map (fun kj -> sprintf "%s,%s,%M,%M,%M,%M,%M,%M,%M,%M,%M,%M,%M" (kj.Date.ToShortDateString()) (kj.Item.Replace(',','.')) kj.Total.Spent kj.Matt.Spent kj.Russ.Spent kj.Jia.Spent kj.Rima.Spent kj.Argiro.Spent kj.Matt.Paid kj.Russ.Paid kj.Jia.Paid kj.Rima.Paid kj.Argiro.Paid) |> Seq.toList)
 //|> Seq.iter (fun (ac,contents) -> File.WriteAllLines(datapath + @"kitty\" + ac.Name + ".csv", List.toArray ("Date,Item,Total,Matt,Russ,Jia,Rima,Argiro,Matt,Russ,Jia,Rima,Argiro" :: contents)))
 

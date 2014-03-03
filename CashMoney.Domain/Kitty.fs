@@ -5,15 +5,18 @@ open System.Linq
 open CashMoney.Domain
 
 type SpentPaid = 
-    { Spent:decimal; 
-      Paid:decimal; }
+    { 
+        AcName:string
+        Spent:decimal
+        Paid:decimal
+    }
 
 type KittyRow = 
-    { Date:DateTime; 
-      Item:string; 
-      Total:SpentPaid; 
-      Matt:SpentPaid; 
-      Others:SpentPaid list; }
+    { 
+        Date:DateTime
+        Item:string
+        SpentPaids:SpentPaid list
+    }
 
 let kittyJournals accounts journals = 
 
@@ -37,7 +40,7 @@ let kittyJournals accounts journals =
     let mattAcs = 
         let nonMattAccountIds = personAcs @ kittyAcs |> List.map (fun a -> a.Id)
         accounts 
-        |> Map.filter (fun _ ac -> nonMattAccountIds.Contains(ac.Id))
+        |> Map.filter (fun _ ac -> not <| nonMattAccountIds.Contains(ac.Id))
         |> Seq.map (fun x -> x.Value)
         |> Seq.toList
 
@@ -47,22 +50,23 @@ let kittyJournals accounts journals =
 
     let kittyRow journal = 
     
-        let CreateSpentPaidFromIds ts (acs:Account list)  = 
+        let CreateSpentPaidFromIds ts (acs:Account list) name = 
             let sumTrans filter = Seq.filter filter >> Seq.sumBy (fun (t:Transaction) -> t.Amount.Value)
             let hasAccount t (ac:Account) = ac.Id = t.Account.Value
             { 
+                AcName = name
                 Spent = sumTrans (fun t -> acs |> List.exists (hasAccount t) && t.Direction = In) ts
                 Paid = sumTrans (fun t -> acs |> List.exists (hasAccount t) && t.Direction = Out) ts 
             }
         
+        let accList = ("Total",kittyAcs) :: ("Matt",mattAcs) :: (personAcs |> List.map (fun ac -> ac.Name,[ac]))
+
         journal.Transactions
         |> fun ts -> 
             { 
                 Date = journal.Date
                 Item = journal.Description
-                Total = CreateSpentPaidFromIds ts kittyAcs
-                Matt = CreateSpentPaidFromIds ts mattAcs
-                Others = personAcs |> List.map (fun ac -> CreateSpentPaidFromIds ts [ac])
+                SpentPaids = accList |> List.map (fun (name,acs) -> CreateSpentPaidFromIds ts acs name)
             }
 
     kittyAcs 
