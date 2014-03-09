@@ -2,73 +2,46 @@
 
 open System
 open System.Linq
-open CashMoney.Domain
+open Domain
 
-type SpentPaid = 
-    { 
-        AcName:string
-        Spent:decimal
-        Paid:decimal
-    }
+type SpentPaid = { Header:string; Spent:decimal; Paid:decimal }
 
-type KittyRow = 
-    { 
-        Date:DateTime
-        Item:string
-        SpentPaids:SpentPaid list
-    }
+type KittyRow = { Date:DateTime; Item:string; SpentPaids:SpentPaid list }
 
-let kittyJournals accounts journals = 
+type KittyAccountSummary = { Rows: KittyRow list; Total: KittyRow }
 
-    let findAccount accounts name = 
-        let accountNameFilter id (account:Account) = account.Name.StartsWith(name)
-        let id = accounts |> Map.tryFindKey accountNameFilter 
-        let id = match id with | Some x -> x | _ -> failwithf "unable to find account %s" name
+let kittyRows (accounts:Map<int,Account>) journals = 
 
-        accounts |> Map.find id
-    
-    let personAcNames = ["Russell"; "Rima"; "Jia"; "Argiro"]
-    let personAcs = personAcNames |> List.map (findAccount accounts)
+    let findAccounts accounts filter =
+        accounts |> Map.filter filter |> Seq.map (fun x -> x.Value) |> Seq.toList
 
-    let isKittyAccount _ ac = ac.Name.Contains("Kitty")
-    let kittyAcs = 
-        accounts 
-        |> Map.filter isKittyAccount 
-        |> Seq.map (fun x -> x.Value)
-        |> Seq.toList
- 
-    let mattAcs = 
-        let nonMattAccountIds = personAcs @ kittyAcs |> List.map (fun a -> a.Id)
-        accounts 
-        |> Map.filter (fun _ ac -> not <| nonMattAccountIds.Contains(ac.Id))
-        |> Seq.map (fun x -> x.Value)
-        |> Seq.toList
+    let personAccs = findAccounts accounts (fun _ ac -> ["Russell"; "Rima"; "Jia"; "Argiro"] |> List.exists (fun x -> ac.Name.StartsWith(x)))
+    let kittyAccs = findAccounts accounts (fun _ ac -> ac.Name.Contains("Kitty"))
+    let nonMattAccs = personAccs @ kittyAccs
+    let mattAccs = findAccounts accounts (fun _ ac -> nonMattAccs |> List.forall (fun x -> x <> ac))
 
-    let getJournals ac =
-        let hasTransForAccount (j:Journal) (ac:Account) = j.HasTransForAccount ac.Id
-        journals |> Seq.where (fun j -> hasTransForAccount j ac)
+    let totalGroup = "Total",kittyAccs
+    let mattGroup = "Matt",mattAccs
+    let otherGroups = List.map (fun ac -> ac.Name,[ac]) personAccs
+    let accGroups = totalGroup :: mattGroup :: otherGroups
 
-    let kittyRow journal = 
-    
-        let CreateSpentPaidFromIds ts (acs:Account list) name = 
-            let sumTrans filter = Seq.filter filter >> Seq.sumBy (fun (t:Transaction) -> t.Amount.Value)
-            let hasAccount t (ac:Account) = ac.Id = t.Account.Value
-            { 
-                AcName = name
-                Spent = sumTrans (fun t -> acs |> List.exists (hasAccount t) && t.Direction = In) ts
-                Paid = sumTrans (fun t -> acs |> List.exists (hasAccount t) && t.Direction = Out) ts 
-            }
-        
-        let accList = ("Total",kittyAcs) :: ("Matt",mattAcs) :: (personAcs |> List.map (fun ac -> ac.Name,[ac]))
+    let CreateSpentPaid ts (header,accs) = 
+        let isRelevantTran direction t = t.Direction = direction && List.exists t.accountIs accs 
+        let sumTrans direction = Seq.filter (isRelevantTran direction) >> Seq.sumBy (fun t -> t.Amount.Value)
+        { 
+            Header = header
+            Spent = sumTrans In ts
+            Paid = sumTrans Out ts 
+        }
 
-        journal.Transactions
-        |> fun ts -> 
-            { 
-                Date = journal.Date
-                Item = journal.Description
-                SpentPaids = accList |> List.map (fun (name,acs) -> CreateSpentPaidFromIds ts acs name)
-            }
+    let createKittyRow (journal:Journal) = 
+        {
+            Date = journal.Date
+            Item = journal.Description
+            SpentPaids = accGroups |> List.map (fun accGroup -> CreateSpentPaid journal.Transactions accGroup)
+        }
 
-    kittyAcs 
-    |> Seq.map (fun ac -> ac, getJournals ac) 
-    |> Seq.map (fun (ac,js) -> ac, js |> Seq.map kittyRow)
+    kittyAccs 
+    |> Seq.map (fun ac -> ac, getAccountJournals journals ac) 
+    |> Seq.map (fun (ac,js) -> ac, js |> Seq.map createKittyRow)
+

@@ -9,11 +9,12 @@ open System.IO
 open System.Linq
 open System.Xml.Linq
 
-open CashMoney.Domain
+open Domain
 open Persistence
 open Kitty
 
-let datapath = @"C:\Users\Matt\Dropbox\Akcounts\Data\"
+//let datapath = @"C:\Users\Matt\Dropbox\Akcounts\Data\"
+let datapath = @"C:\Users\matt__000\Dropbox\Akcounts\Data\"
 
 let accountTags = LoadAccountTags datapath
 let accounts = LoadAccounts datapath 
@@ -22,12 +23,12 @@ let journals = LoadJournals datapath
 //Start new stuff
 
 let addSp sp1 sp2 = 
-    if (sp1.AcName = sp2.AcName)
-    then { AcName = (sp1.AcName); Spent = (sp1.Spent + sp2.Spent); Paid = (sp1.Paid + sp2.Paid) }
-    else failwith ("Cannot merge spentPaid for " + sp1.AcName + " with " + sp2.AcName)
+    if (sp1.Header = sp2.Header)
+    then { Header = (sp1.Header); Spent = (sp1.Spent + sp2.Spent); Paid = (sp1.Paid + sp2.Paid) }
+    else failwith ("Cannot merge spentPaid for " + sp1.Header + " with " + sp2.Header)
 
 let mergeSpendPaid acc newSP = 
-    let existingSP = acc |> List.tryFind (fun x -> x.AcName = newSP.AcName)
+    let existingSP = acc |> List.tryFind (fun x -> x.Header = newSP.Header)
     match existingSP with 
     | None -> newSP :: acc
     | Some accSp -> acc |> List.map (fun sp -> if sp = accSp then addSp sp newSP else sp)
@@ -53,11 +54,11 @@ let totalKitty (kjs:KittyRow list) =
 
 
 let fixedHeader = ["Date"; "Item"; "Total";]
-let accountGroups (kj:KittyRow) = kj.SpentPaids |> List.map (fun sp -> sp.AcName)
+let accountGroups (kj:KittyRow) = kj.SpentPaids |> List.map (fun sp -> sp.Header)
 let createHeader kj = String.Join (",", fixedHeader @ accountGroups kj @ accountGroups kj)
 
 let kittyJournals = 
-    let kjs = kittyJournals accounts journals
+    let kjs = kittyRows accounts journals
     
     let rows = kjs |> Seq.map (fun (ac,kjs) -> ac, totalKitty (Seq.toList kjs))
 
@@ -142,5 +143,3 @@ let kittyJournals =
 //|> Seq.sortBy (fun (ac,am) -> ac.Name)
 //|> Seq.iter (fun (ac, am) -> printfn "%s,%A,%b,%M" ac.Name ac.Type ac.Enabled am)
 //
-
-

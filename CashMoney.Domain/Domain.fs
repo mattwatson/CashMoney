@@ -1,4 +1,4 @@
-﻿namespace CashMoney.Domain
+﻿module Domain
 
 type AccountType = Asset | Liability | Income | Expense | Payable | Receivable | Equity
 
@@ -32,6 +32,7 @@ type Transaction =
         Note      : string
         Verified  : bool 
     }
+    member this.accountIs a = this.Account.IsSome && this.Account.Value = a.Id
 
 type Journal = 
     { 
@@ -41,6 +42,8 @@ type Journal =
         Verified      : bool
         Transactions  : Transaction list 
     }
-
-    member this.HasTransForAccount ac =
-        this.Transactions |> Seq.exists (fun t -> t.Account.IsSome && t.Account.Value = ac)
+    
+//Utility functions
+let getAccountJournals js (a:Account) = 
+    let involvesAccount a j = j.Transactions |> Seq.exists (fun t -> t.accountIs a)
+    js |> Seq.where (involvesAccount a)

@@ -4,7 +4,7 @@ open System
 open System.Linq
 open System.Xml.Linq
 
-open CashMoney.Domain
+open Domain
 
 //When saving journals in the future, just dump them out in date order, and perhaps have one file per year, or one per month.
 
