@@ -45,3 +45,18 @@ let kittyRows (accounts:Map<int,Account>) journals =
     |> Seq.map (fun ac -> ac, getAccountJournals journals ac) 
     |> Seq.map (fun (ac,js) -> ac, js |> Seq.map createKittyRow)
 
+
+let kittyTotal (krs:seq<KittyRow>) = 
+    let totalSpent sps = Seq.sumBy(fun sp -> sp.Spent) sps
+    let totalPaid sps = Seq.sumBy(fun sp -> sp.Paid) sps
+
+    let totalSpentPaidsByHeader sps = 
+        Seq.groupBy (fun sp -> sp.Header) sps
+        |> Seq.map (fun (header,sps) -> { Header = header; Spent = totalSpent sps; Paid = totalPaid sps })
+        |> Seq.toList
+
+    let minDate = krs |> Seq.map (fun kr -> kr.Date) |> Seq.min
+    let spentPaids = totalSpentPaidsByHeader (krs |> Seq.collect (fun kr -> kr.SpentPaids))
+    {
+        Date = minDate; Item = "Total"; SpentPaids = spentPaids
+    }

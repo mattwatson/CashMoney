@@ -20,55 +20,27 @@ let accountTags = LoadAccountTags datapath
 let accounts = LoadAccounts datapath 
 let journals = LoadJournals datapath
 
-//Start new stuff
-
-let addSp sp1 sp2 = 
-    if (sp1.Header = sp2.Header)
-    then { Header = (sp1.Header); Spent = (sp1.Spent + sp2.Spent); Paid = (sp1.Paid + sp2.Paid) }
-    else failwith ("Cannot merge spentPaid for " + sp1.Header + " with " + sp2.Header)
-
-let mergeSpendPaid acc newSP = 
-    let existingSP = acc |> List.tryFind (fun x -> x.Header = newSP.Header)
-    match existingSP with 
-    | None -> newSP :: acc
-    | Some accSp -> acc |> List.map (fun sp -> if sp = accSp then addSp sp newSP else sp)
-
-let mergeKittyRow acc kr = 
-    { 
-        Date = if acc.Date < kr.Date then acc.Date else kr.Date
-        Item = "Total"
-        SpentPaids = List.fold mergeSpendPaid acc.SpentPaids kr.SpentPaids
-    }
-
-
-//    let mergeSpendPaidList spl1 spl2 =
-   
-    //let x rows = rows.Total :: rows.Matt :: rows.Others
-
-let totalKitty (kjs:KittyRow list) = 
-    match kjs with
-    | [] -> failwith "Cannot work out the total if there are no rows"
-    | kj :: kjs -> kjs |> List.fold mergeKittyRow kj 
-    
-
-
-
-let fixedHeader = ["Date"; "Item"; "Total";]
+let fixedHeader = ["Date"; "Item";]
 let accountGroups (kj:KittyRow) = kj.SpentPaids |> List.map (fun sp -> sp.Header)
-let createHeader kj = String.Join (",", fixedHeader @ accountGroups kj @ accountGroups kj)
+let header rows = 
+    let firstRow = rows |> Seq.nth 0 |> snd
+    String.Join (",", fixedHeader @ accountGroups firstRow @ accountGroups firstRow)
 
-let kittyJournals = 
-    let kjs = kittyRows accounts journals
+let kittyTotals = 
+    let rows = 
+        kittyRows accounts journals
+        |> Seq.map (fun (ac,krs) -> ac, kittyTotal krs)
     
-    let rows = kjs |> Seq.map (fun (ac,kjs) -> ac, totalKitty (Seq.toList kjs))
-
+    //want to pipe rows straight in
     let rowStrings = 
         rows
-        |> Seq.map (fun (ac,kjs) -> (List.fold (fun acc x -> sprintf "%s,%M" acc x.Spent) (sprintf "%s,%s" ac.Name "Total") kjs.SpentPaids) + (List.fold (fun acc x -> sprintf "%s,%M" acc x.Paid) (sprintf "%s,%s" ac.Name "Total") kjs.SpentPaids))
+        |> Seq.map (fun (ac,kjs) -> 
+            let rowStart = sprintf "%s,%s" ac.Name "Total"
+            let startAndPaid = List.fold (fun acc x -> sprintf "%s,%M" acc x.Spent) rowStart kjs.SpentPaids
+            List.fold (fun acc x -> sprintf "%s,%M" acc x.Paid) startAndPaid kjs.SpentPaids)
         |> Seq.toList
 
-    let firstKJ = rows |> Seq.nth 0 |> snd
-    let header = createHeader firstKJ
+    let header = header rows
 
     header :: rowStrings
 
