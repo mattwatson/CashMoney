@@ -10,12 +10,9 @@ type KittyRow = { Date:DateTime; Item:string; SpentPaids:SpentPaid list }
 
 type KittyAccountSummary = { Rows: KittyRow list; Total: KittyRow }
 
-let kittyRows (accounts:Map<int,Account>) journals = 
+let accGroups accounts = 
 
-    let findAccounts accounts filter =
-        accounts |> Map.filter filter |> Seq.map (fun x -> x.Value) |> Seq.toList
-
-    let personAccs = findAccounts accounts (fun _ ac -> ["Russell"; "Rima"; "Jia"; "Argiro"] |> List.exists (fun x -> ac.Name.StartsWith(x)))
+    let personAccs = ["Russell"; "Rima"; "Jia"; "Argiro"] |> List.collect (fun x -> findAccounts accounts (fun _ ac -> ac.Name.StartsWith(x)))
     let kittyAccs = findAccounts accounts (fun _ ac -> ac.Name.Contains("Kitty"))
     let nonMattAccs = personAccs @ kittyAccs
     let mattAccs = findAccounts accounts (fun _ ac -> nonMattAccs |> List.forall (fun x -> x <> ac))
@@ -23,7 +20,9 @@ let kittyRows (accounts:Map<int,Account>) journals =
     let totalGroup = "Total",kittyAccs
     let mattGroup = "Matt",mattAccs
     let otherGroups = List.map (fun ac -> ac.Name,[ac]) personAccs
-    let accGroups = totalGroup :: mattGroup :: otherGroups
+    totalGroup :: mattGroup :: otherGroups
+
+let kittyRows (accounts:Map<int,Account>) journals = 
 
     let CreateSpentPaid ts (header,accs) = 
         let isRelevantTran direction t = t.Direction = direction && List.exists t.accountIs accs 
@@ -38,13 +37,15 @@ let kittyRows (accounts:Map<int,Account>) journals =
         {
             Date = journal.Date
             Item = journal.Description
-            SpentPaids = accGroups |> List.map (fun accGroup -> CreateSpentPaid journal.Transactions accGroup)
+            SpentPaids = accGroups accounts |> List.map (fun accGroup -> CreateSpentPaid journal.Transactions accGroup)
         }
 
-    kittyAccs 
+    let kittyAccs = findAccounts accounts (fun _ ac -> ac.Name.Contains("Kitty"))
+    
+    kittyAccs
     |> Seq.map (fun ac -> ac, getAccountJournals journals ac) 
     |> Seq.map (fun (ac,js) -> ac, js |> Seq.map createKittyRow)
-
+    |> Seq.toList
 
 let kittyTotal (krs:seq<KittyRow>) = 
     let totalSpent sps = Seq.sumBy(fun sp -> sp.Spent) sps
@@ -60,3 +61,21 @@ let kittyTotal (krs:seq<KittyRow>) =
     {
         Date = minDate; Item = "Total"; SpentPaids = spentPaids
     }
+
+
+let kittyTotals accounts journals = 
+
+    let headerStrings = "Date" :: "Item" :: ((accGroups accounts) |> List.map (fun (ac,_) -> ac)) |> Seq.toArray
+    let header = String.Join(",", headerStrings)
+
+    let buildOutputString (ac,sps) = 
+        let spents = sps |> List.map (fun x -> x.Spent)
+        let paids = sps |> List.map (fun x -> x.Paid)
+        let values = spents @ paids |> List.toArray |> Array.map (fun x -> Math.Round(x, 5))
+        ac.Name + ",Total," + String.Join (",",values)
+
+    let allRows = kittyRows accounts journals
+    let totalRows = allRows |> List.map (fun (ac,krs) -> ac, kittyTotal krs)
+    let totalRowStrings = totalRows |> List.map (fun (ac,kjs) -> buildOutputString (ac,kjs.SpentPaids))
+
+    header :: totalRowStrings

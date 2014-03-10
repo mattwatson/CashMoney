@@ -13,43 +13,21 @@ open Domain
 open Persistence
 open Kitty
 
-//let datapath = @"C:\Users\Matt\Dropbox\Akcounts\Data\"
-let datapath = @"C:\Users\matt__000\Dropbox\Akcounts\Data\"
+let datapath = @"C:\Users\Matt\Dropbox\Akcounts\Data\"
+//let datapath = @"C:\Users\matt__000\Dropbox\Akcounts\Data\"
 
 let accountTags = LoadAccountTags datapath
 let accounts = LoadAccounts datapath 
 let journals = LoadJournals datapath
 
-let fixedHeader = ["Date"; "Item";]
-let accountGroups (kj:KittyRow) = kj.SpentPaids |> List.map (fun sp -> sp.Header)
-let header rows = 
-    let firstRow = rows |> Seq.nth 0 |> snd
-    String.Join (",", fixedHeader @ accountGroups firstRow @ accountGroups firstRow)
-
-let kittyTotals = 
-    let rows = 
-        kittyRows accounts journals
-        |> Seq.map (fun (ac,krs) -> ac, kittyTotal krs)
-    
-    //want to pipe rows straight in
-    let rowStrings = 
-        rows
-        |> Seq.map (fun (ac,kjs) -> 
-            let rowStart = sprintf "%s,%s" ac.Name "Total"
-            let startAndPaid = List.fold (fun acc x -> sprintf "%s,%M" acc x.Spent) rowStart kjs.SpentPaids
-            List.fold (fun acc x -> sprintf "%s,%M" acc x.Paid) startAndPaid kjs.SpentPaids)
-        |> Seq.toList
-
-    let header = header rows
-
-    header :: rowStrings
-
-//|> Seq.map (fun (ac,kjs) -> ac, createHeader kjs.First())
+kittyTotals accounts journals
 
 
-
-//|> Seq.map (fun (ac,kjs) -> ac,kjs |> Seq.sortBy (fun kj -> kj.Date) |> Seq.map (fun kj -> sprintf "%s,%s,%M,%M,%M,%M,%M,%M,%M,%M,%M,%M,%M" (kj.Date.ToShortDateString()) (kj.Item.Replace(',','.')) kj.Total.Spent kj.Matt.Spent kj.Russ.Spent kj.Jia.Spent kj.Rima.Spent kj.Argiro.Spent kj.Matt.Paid kj.Russ.Paid kj.Jia.Paid kj.Rima.Paid kj.Argiro.Paid) |> Seq.toList)
-//|> Seq.iter (fun (ac,contents) -> File.WriteAllLines(datapath + @"kitty\" + ac.Name + ".csv", List.toArray ("Date,Item,Total,Matt,Russ,Jia,Rima,Argiro,Matt,Russ,Jia,Rima,Argiro" :: contents)))
+//TODO rewrite this so that it works with new KittyRow
+//TODO implement writing a kittyAccountSummary out to a file (rows and total)
+kittyRows accounts journals
+|> Seq.map (fun (ac,kjs) -> ac,kjs |> Seq.sortBy (fun kj -> kj.Date) |> Seq.map (fun kj -> sprintf "%s,%s,%M,%M,%M,%M,%M,%M,%M,%M,%M,%M,%M" (kj.Date.ToShortDateString()) (kj.Item.Replace(',','.')) kj.Total.Spent kj.Matt.Spent kj.Russ.Spent kj.Jia.Spent kj.Rima.Spent kj.Argiro.Spent kj.Matt.Paid kj.Russ.Paid kj.Jia.Paid kj.Rima.Paid kj.Argiro.Paid) |> Seq.toList)
+|> Seq.iter (fun (ac,contents) -> File.WriteAllLines(datapath + @"kitty\" + ac.Name + ".csv", List.toArray ("Date,Item,Total,Matt,Russ,Jia,Rima,Argiro,Matt,Russ,Jia,Rima,Argiro" :: contents)))
 
 
 //let kittySheets = 
@@ -93,7 +71,11 @@ let kittyTotals =
 //|> fun contents -> File.WriteAllLines(datapath + "kittySum.csv", List.toArray ("Name,T,Matt,Russ,Jia,Rima,Argiro,Matt,Russ,Jia,Rima,Argiro" :: contents))
 //
 ////Next idea - generate kittyBalance per row, and only total them later.
-//
+
+
+
+// Broken Journal stuff
+
 //let balances = 
 //    transactions
 //    |> Seq.groupBy (fun t -> t.Account)

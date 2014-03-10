@@ -47,3 +47,6 @@ type Journal =
 let getAccountJournals js (a:Account) = 
     let involvesAccount a j = j.Transactions |> Seq.exists (fun t -> t.accountIs a)
     js |> Seq.where (involvesAccount a)
+
+let findAccounts accounts filter =
+    accounts |> Map.filter filter |> Seq.map (fun x -> x.Value) |> Seq.toList
