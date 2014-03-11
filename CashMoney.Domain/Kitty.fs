@@ -7,6 +7,12 @@ open Domain
 type SpentPaid = { Header:string; Spent:decimal; Paid:decimal }
 
 type KittyRow = { Date:DateTime; Item:string; SpentPaids:SpentPaid list }
+                member this.toString showDate item = 
+                    let date = if showDate then this.Date.ToString("dd/MM/yyyy") else ""
+                    let spents = this.SpentPaids |> List.map (fun x -> x.Spent)
+                    let paids = this.SpentPaids |> List.map (fun x -> x.Paid)
+                    let values = spents @ paids |> List.toArray |> Array.map (fun x -> Math.Round(x, 5))
+                    sprintf "%s,%s,%s" date item (String.Join (",",values))
 
 type KittyAccountSummary = { Rows: KittyRow list; Total: KittyRow }
 
@@ -47,7 +53,7 @@ let kittyRows (accounts:Map<int,Account>) journals =
     |> Seq.map (fun (ac,js) -> ac, js |> Seq.map createKittyRow)
     |> Seq.toList
 
-let kittyTotal (krs:seq<KittyRow>) = 
+let kittyTotal item (krs:seq<KittyRow>) = 
     let totalSpent sps = Seq.sumBy(fun sp -> sp.Spent) sps
     let totalPaid sps = Seq.sumBy(fun sp -> sp.Paid) sps
 
@@ -59,23 +65,43 @@ let kittyTotal (krs:seq<KittyRow>) =
     let minDate = krs |> Seq.map (fun kr -> kr.Date) |> Seq.min
     let spentPaids = totalSpentPaidsByHeader (krs |> Seq.collect (fun kr -> kr.SpentPaids))
     {
-        Date = minDate; Item = "Total"; SpentPaids = spentPaids
+        Date = minDate; Item = item; SpentPaids = spentPaids
     }
 
+let kittySummaries accounts journals = 
 
-let kittyTotals accounts journals = 
+    let kittySummary item krs = 
+        { 
+            Rows = krs |> Seq.sortBy (fun kr -> kr.Date) |> Seq.toList
+            Total = kittyTotal item krs
+        }
 
-    let headerStrings = "Date" :: "Item" :: ((accGroups accounts) |> List.map (fun (ac,_) -> ac)) |> Seq.toArray
+    kittyRows accounts journals 
+    |> Seq.map (fun (ac,krs) -> ac,kittySummary "Total" krs)
+
+
+
+let kittyTotalStrings accounts journals = 
+
+    let people = ((accGroups accounts) |> List.map (fun (ac,_) -> ac))
+    let headerStrings = "Date" :: "Item" :: (people @ people) |> Seq.toArray
     let header = String.Join(",", headerStrings)
 
-    let buildOutputString (ac,sps) = 
-        let spents = sps |> List.map (fun x -> x.Spent)
-        let paids = sps |> List.map (fun x -> x.Paid)
-        let values = spents @ paids |> List.toArray |> Array.map (fun x -> Math.Round(x, 5))
-        ac.Name + ",Total," + String.Join (",",values)
-
-    let allRows = kittyRows accounts journals
-    let totalRows = allRows |> List.map (fun (ac,krs) -> ac, kittyTotal krs)
-    let totalRowStrings = totalRows |> List.map (fun (ac,kjs) -> buildOutputString (ac,kjs.SpentPaids))
+    let totalRowStrings = kittyRows accounts journals
+                          |> List.map (fun (ac,krs) -> kittyTotal ac.Name krs)
+                          |> List.map (fun kt -> kt.toString true kt.Item)
 
     header :: totalRowStrings
+
+let kittySummaryStrings accounts journals =
+
+    let kittySummaryString ac ks =
+        let people = ((accGroups accounts) |> List.map (fun (ac,_) -> ac))
+        let headerStrings = "Date" :: "Item" :: (people @ people) |> Seq.toArray
+        let header = String.Join(",", headerStrings)
+        let footer = ks.Total.toString false "Total"
+        let rows = ks.Rows |> Seq.sortBy (fun kr -> kr.Date) |> Seq.map (fun kr -> kr.toString true kr.Item) |> Seq.toList
+        (header :: rows) @ [footer]
+    
+    kittySummaries accounts journals
+    |> Seq.map (fun (ac,ks) -> ac,kittySummaryString ac ks)

@@ -18,6 +18,9 @@ let journals = LoadJournals datapath
 [<EntryPoint>]
 let main argv = 
     
-    File.WriteAllLines(datapath + @"kitty\Totals.csv", (kittyTotals accounts journals))
+    File.WriteAllLines(datapath + @"kitty\Totals.csv", (kittyTotalStrings accounts journals))
     
+    kittySummaryStrings accounts journals
+    |> Seq.iter (fun (ac,contents) -> File.WriteAllLines(datapath + @"kitty\" + ac.Name + ".csv", contents))
+
     0 // return an integer exit code

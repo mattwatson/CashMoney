@@ -20,14 +20,10 @@ let accountTags = LoadAccountTags datapath
 let accounts = LoadAccounts datapath 
 let journals = LoadJournals datapath
 
-kittyTotals accounts journals
+let kts = kittyTotalStrings accounts journals
 
-
-//TODO rewrite this so that it works with new KittyRow
-//TODO implement writing a kittyAccountSummary out to a file (rows and total)
-kittyRows accounts journals
-|> Seq.map (fun (ac,kjs) -> ac,kjs |> Seq.sortBy (fun kj -> kj.Date) |> Seq.map (fun kj -> sprintf "%s,%s,%M,%M,%M,%M,%M,%M,%M,%M,%M,%M,%M" (kj.Date.ToShortDateString()) (kj.Item.Replace(',','.')) kj.Total.Spent kj.Matt.Spent kj.Russ.Spent kj.Jia.Spent kj.Rima.Spent kj.Argiro.Spent kj.Matt.Paid kj.Russ.Paid kj.Jia.Paid kj.Rima.Paid kj.Argiro.Paid) |> Seq.toList)
-|> Seq.iter (fun (ac,contents) -> File.WriteAllLines(datapath + @"kitty\" + ac.Name + ".csv", List.toArray ("Date,Item,Total,Matt,Russ,Jia,Rima,Argiro,Matt,Russ,Jia,Rima,Argiro" :: contents)))
+let kss = kittySummaryStrings accounts journals
+          |> Seq.iter (fun (ac,contents) -> File.WriteAllLines(datapath + @"kitty\" + ac.Name + ".csv", contents))
 
 
 //let kittySheets = 
